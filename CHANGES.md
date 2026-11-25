@@ -3,23 +3,60 @@
 Baseline commit: `baseline before agent tests` (see `git log --oneline`).
 Review a fix with `git show <id>`, undo it with `git revert <id>`.
 
+Setup notes: before the baseline commit I added a `.gitignore` (`__pycache__/`, `*.pyc`, `.pytest_cache/`) so
+compiled files are not tracked, and set the git author **for this repository only** (`git config user.name`,
+no global change). No packages were installed, nothing outside `~/hier_ws/src/hier_robot` was changed
+(results/logs go to `~/hier_results` as before). `config/selftest.yaml` is unchanged.
+
 ## Checklist (TEST_PLAN.md)
 
 A. Build + offline tests
 - [x] `colcon build` OK, `./run.sh test` -> 7 passed.
 
 B. Start
-- [x] `./run.sh start` -> Gazebo + RViz open, "Ready". `/map`, `/scan`, `/odom` present.
-- [x] `tf2_echo map base_footprint` prints a transform.
+- [x] `./run.sh start` -> Gazebo + RViz processes running, "Ready". `/map`, `/scan`, `/odom` present.
+  (RViz writes a GLSL warning for the map texture into `slam.log`: a WSL graphics-driver issue, not our code.
+  I could not look at the windows myself: check them by eye, see MANUAL_CHECK.md.)
+- [x] `tf2_echo map base_footprint` prints a transform (`Translation: [-0.001, 0.000, 0.008]`).
 
-C. Self-test
-- [ ] (filled in below when all runs are done)
+C. Self-test — 3 runs, **15 / 15 PASS** (5/5 in each run)
+- [x] `./run.sh selftest` -> `~/hier_results/selftest.md`, 5 tasks.
+- [x] Every FAIL classified. There was no test FAIL. Inside the tests some *steps* failed, all because of
+      LLM plan errors that the replanning loop then repaired (rule 3: a result, not a bug):
+  - T3, runs 1 + 2: first plan has no `pick` (`goto(hall) -> goto(room_D) -> goto(room_E) -> place(cube_3)`),
+    `place` fails "робот не держит cube_3", replan is correct. Run 3: first plan `goto(room_B) -> pick(cube_3)`,
+    fails "cube_3 не в room_B", replan correct.
+  - T4, all runs: `pick(cube_2)` in room_A fails, then the LLM plans `goto(room_C)` -> **D* refuses
+    ("D*: цель в запретной зоне")**, then the LLM moves cube_0 to room_E instead (pointless, but harmless:
+    cube_2 stays in room_C as expected).
+  - T2, run 2: plan ends with `goto(room_C)` (refused by D*), then the LLM repeats cubes it had already moved
+    (it ignores the state it is given); cube_1, cube_3 were already in room_A.
+  - T2, T5: the LLM also moves cube_0 in T2 and places at `hall` instead of `bin_hall` in T5: allowed by the
+    test expectations.
+- [x] Hard requirements in all runs: no crash, no LiDAR block, no `LQR: таймаут`, every goto arrived
+      (RMS cross-track 0.3–4.2 cm) or was refused by `D*:` at once. A separate checker
+      (subscribed to `/hierarchy/path` and TF `map->base_footprint`, compared with the room polygons of
+      `building.yaml`) recorded in runs 2 + 3: 825 D* paths / 29 832 path points and 5 207 robot poses —
+      **0 outside the building, 0 in room_C**.
+- [x] Target met: T1, T4 3/3; T2, T3, T5 3/3.
 
 D. Manual mode, scripted
-- [ ] (filled in below)
+- [x] First try FAILED: the piped tasks never reached the robot (bug in `run.sh`, see change 1).
+- [x] After the fix: plan with `[1 LLM]`, `[2 D*]`, `[3 LQR]` lines, `cube_0 в room_A`, exits on `q` (exit 0).
 
 E. Robustness
-- [ ] (filled in below)
+- [x] `stop` then `start` twice: 0 leftover processes after each stop, both starts "Ready", 1 gzserver,
+      topics + TF present.
+- [x] `/hierarchy/path` is published during every task and stays inside the building (checker numbers above;
+      in check D: 25 paths / 575 points, 0 outside). Not checked by eye in RViz — see MANUAL_CHECK.md.
+
+F. Perception (optional) — done
+- [x] `./run.sh explore` -> tour 15/15, `tensor_prompt.txt` written (4 cubes: cube_0, cube_8, cube_13, cube_18;
+      SigLIP2 7.4 s/frame). The mapper crashed on exit -> fixed, see change 2.
+- [x] `./run.sh orders-seen` starts, takes a task: "Отвези кубик из room_B в комнату со стеллажами" ->
+      `goto(room_B) -> pick(cube_8) -> goto(shelf_A1) -> place(cube_8)`, all steps done.
+- Note: SigLIP2 positions are rough (the 4 real cubes are at different places than the found ones, e.g.
+  "cube_0" found at (3.0, 0.8) in the hall). This is the known limit in HOW_IT_WORKS.md §7, not changed.
 
 ## Changes
 
