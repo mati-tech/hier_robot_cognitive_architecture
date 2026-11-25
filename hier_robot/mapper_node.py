@@ -132,6 +132,8 @@ class SemanticMapper(Node):
         self.publish()
 
     def publish(self):
+        if not rclpy.ok():   # Ctrl+C / pkill arrived during a slow SigLIP2 frame: ROS is already shut down
+            return
         arr = MarkerArray()
         now = self.get_clock().now().to_msg()
         for k, lm in enumerate(self.map.confirmed()):
@@ -165,7 +167,8 @@ class SemanticMapper(Node):
             prompt = tensor.to_prompt()
             with open(os.path.join(self.out_dir, "tensor_prompt.txt"), "w", encoding="utf-8") as f:
                 f.write(prompt)
-            self.tensor_pub.publish(String(data=prompt))
+            if rclpy.ok():   # the final save() in main() runs after ROS shutdown: files only
+                self.tensor_pub.publish(String(data=prompt))
         except Exception as e:  # noqa: BLE001  (the HW3 outputs above are already saved)
             self.get_logger().warn(f"tensor not saved: {e}")
         if self.frames:
