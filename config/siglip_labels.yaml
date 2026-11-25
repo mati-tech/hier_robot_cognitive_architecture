@@ -1,0 +1,29 @@
+# SigLIP2 labels and thresholds for the office world in Gazebo.
+# What SigLIP2 should look for. Several prompts per class are averaged.
+# Classes marked background: true are only used to reject strips with nothing in them.
+model: google/siglip2-base-patch16-224   # smallest SigLIP2, fine on a laptop CPU (~0.5 s per frame)
+threshold: 0.003      # simulator: stricter than the real-photo setting
+margin: 0.001        # winner must beat background
+ratio: 3.0           # winner must score >= 3x the second-best object class
+strips: 6              # vertical strips per image (each strip -> one bearing)
+min_observations: 3    # SigLIP2 needs ~7 s per frame on this CPU: 6 sightings were never reached in a tour
+assoc_dist: 0.6        # m, larger: one real cube was split into 3 landmarks with 0.45
+near_dist: 0.9         # m, objects closer than this get a "рядом с" edge
+max_range: 3.5         # m, ignore LiDAR ranges beyond this (LDS-01 max)
+
+classes:
+  cube:
+    prompts: ["a photo of a small colored cube", "a toy block on the floor", "a small box"]
+  door:
+    prompts: ["a photo of a door", "an open doorway"]
+  chair:
+    prompts: ["a photo of a chair"]
+  table:
+    prompts: ["a photo of a table", "a desk"]
+  shelf:
+    prompts: ["a photo of a bookshelf", "a cabinet"]
+  trash_can:
+    prompts: ["a photo of a trash can"]
+  background:
+    background: true
+    prompts: ["a photo of a plain wall", "a photo of an empty floor", "a blurry photo of nothing"]

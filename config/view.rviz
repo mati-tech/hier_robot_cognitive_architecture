@@ -1,0 +1,64 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Reference Frame: <Fixed Frame>
+    - Class: rviz_default_plugins/Map
+      Name: RTAB-Map grid
+      Enabled: true
+      Topic:
+        Value: /map
+        Durability Policy: Volatile
+        Reliability Policy: Reliable
+      Alpha: 0.8
+      Color Scheme: map
+    - Class: rviz_default_plugins/RobotModel
+      Name: Robot
+      Enabled: true
+      Description Topic:
+        Value: /robot_description
+    - Class: rviz_default_plugins/LaserScan
+      Name: LiDAR
+      Enabled: true
+      Topic:
+        Value: /scan
+        Reliability Policy: Best Effort
+      Size (m): 0.04
+      Color Transformer: FlatColor
+      Color: 255; 0; 0
+    - Class: rviz_default_plugins/Path
+      Name: D* path
+      Enabled: true
+      Topic:
+        Value: /hierarchy/path
+      Color: 0; 200; 255
+      Line Width: 0.05
+      Line Style: Billboards
+    - Class: rviz_default_plugins/MarkerArray
+      Name: SigLIP2 objects
+      Enabled: true
+      Topic:
+        Value: /semantic_map/markers
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: false
+  Global Options:
+    Fixed Frame: map
+    Background Color: 48; 48; 48
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: Current View
+      Scale: 60
+      X: 0
+      Y: 0
+Window Geometry:
+  Width: 1200
+  Height: 800
