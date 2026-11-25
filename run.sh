@@ -41,7 +41,8 @@ wait_for() {  # wait_for <seconds> <description> <command...>
 }
 topic_up() { ros2 topic list 2>/dev/null | grep -qx "$1"; }
 need_start() { topic_up /map || { echo "!! not started: run ./run.sh start first"; exit 1; }; }
-warm_llm() { ollama run "$OLLAMA_MODEL" "hi" >/dev/null 2>&1; }
+# </dev/null: without it `ollama run` reads the rest of stdin (e.g. tasks piped into ./run.sh orders)
+warm_llm() { ollama run "$OLLAMA_MODEL" "hi" </dev/null >/dev/null 2>&1; }
 
 stop_all() {
   # patterns chosen so they never match this script itself
